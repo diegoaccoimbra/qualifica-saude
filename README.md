@@ -64,3 +64,29 @@ No painel de controle de qualificação, o profissional de saúde deve ser capaz
 - Solicitacao: Contém os dados da solicitação (especialidade, motivo, status da qualificação) e se relaciona com o Paciente.
 - Documento: Armazena informações sobre cada arquivo enviado pelo paciente.
 - ProfissionalDeSaude: Armazena os dados dos usuários responsáveis pela qualificação.
+
+---
+
+## 🛠️ Arquitetura da Camada de Serviço e API (Axios)
+
+### Destaques Técnicos da Implementação:
+
+* **Instância Centralizada (`api.js`):** Configuração de uma instância base do Axios com `baseURL` padronizada e `timeout` definido, evitando repetição de código e facilitando alterações de ambiente.
+* **Interceptadores de Requisição (`Request Interceptors`):** 
+  * **Autenticação Automática:** Injeção dinâmica do token JWT (`Bearer Token`) recuperado do `localStorage` em todas as rotas protegidas.
+  * **Gestão Inteligente de `Content-Type`:** Verificação automática se o payload é do tipo `FormData`. Caso seja (essencial para uploads de arquivos e importação de planilhas), o cabeçalho é removido para que o navegador gerencie corretamente o `multipart/form-data` com os *boundaries* necessários; caso contrário, assume o padrão `application/json`.
+* **Tratamento Global de Erros:** Interceptação robusta de erros do Axios para extrair mensagens amigáveis vindas do back-end (`error.response.data.message`), padronizando o feedback para a interface.
+* **Separação de Responsabilidades (Services):** Os endpoints da API são modularizados por domínio de negócio (`paciente.js`, `profissional.js`, `auth.js` / `secretaria.js`), mantendo os componentes limpos e focados apenas na interface.
+* **Manipulação de Dados Complexos:** Suporte completo a operações avançadas, como:
+  * Uploads de múltiplos documentos e anexos via `FormData`.
+  * Importação de planilhas (CSV/XLSX) pela secretaria.
+  * **Download de Arquivos Binários (`Blob`):** Configuração de `responseType: 'blob'` para exportação de relatórios e filas finais diretamente pelo sistema.
+
+### Estrutura de Serviços
+```text
+src/
+└── services/
+    ├── api.js             # Configuração base e interceptadores
+    ├── auth.js            # Autenticação, login, logout e rotas da secretaria (import/export)
+    ├── paciente.js        # Solicitações, cadastro e upload de documentos do paciente
+    └── profissional.js    # Fila de qualificação, detalhes e aprovação/reprovação
